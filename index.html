@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Video2Text</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f9fafc;
+      --text: #172033;
+      --muted: #6b7280;
+      --line: #dce2ec;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #15946b;
+      --warning: #b45309;
+      --shadow: 0 20px 50px rgba(28, 39, 64, .12);
+      --radius: 8px;
+      font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .7), rgba(245, 247, 251, .95)),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .titlebar {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(220, 226, 236, .8);
+      background: rgba(255, 255, 255, .78);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      background: #172033;
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .brand strong {
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .brand span,
+    .window-hint {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .main {
+      width: min(1040px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 46px 0 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      align-items: end;
+      gap: 28px;
+      padding: 0 4px 8px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.08;
+      letter-spacing: 0;
+      max-width: 720px;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 650px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .meta {
+      display: grid;
+      gap: 8px;
+      padding-bottom: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .meta-row b {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, .9);
+      border: 1px solid rgba(220, 226, 236, .9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .dropzone {
+      min-height: 390px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      overflow: hidden;
+    }
+
+    .drop-target {
+      margin: 18px;
+      border: 1.5px dashed #b9c4d6;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, .08), rgba(21, 148, 107, .08)),
+        var(--panel-soft);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 32px;
+    }
+
+    .file-icon {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #172033;
+      color: white;
+      box-shadow: 0 12px 28px rgba(23, 32, 51, .18);
+    }
+
+    .file-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .drop-target h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .drop-target p {
+      margin: 0 auto 24px;
+      max-width: 440px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .primary {
+      border: 0;
+      min-height: 44px;
+      padding: 0 20px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      cursor: default;
+      font-weight: 650;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, .24);
+    }
+
+    .primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .file-summary {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      padding: 18px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .summary-label {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .summary-value {
+      margin: 0;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .ghost {
+      align-self: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      min-height: 38px;
+      padding: 0 14px;
+      cursor: default;
+      font-weight: 600;
+    }
+
+    .side {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .output-box {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+    }
+
+    .path {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .progress {
+      display: grid;
+      gap: 10px;
+    }
+
+    .progress-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e9eef6;
+    }
+
+    .bar span {
+      display: block;
+      width: 42%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+    }
+
+    .status-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .status-list li {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: #c4ccd9;
+      box-shadow: 0 0 0 4px #eef2f7;
+    }
+
+    .done .dot {
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(21, 148, 107, .13);
+    }
+
+    .active .dot {
+      background: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, .13);
+    }
+
+    .status-list b {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .footer {
+      width: min(1040px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 0 0 22px;
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    @media (max-width: 840px) {
+      .main {
+        width: min(100vw - 24px, 680px);
+        padding-top: 28px;
+      }
+
+      .hero,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .file-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .ghost {
+        width: 100%;
+      }
+
+      .footer {
+        width: min(100vw - 24px, 680px);
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .titlebar {
+        padding: 0 12px;
+      }
+
+      .window-hint,
+      .brand span {
+        display: none;
+      }
+
+      .main {
+        padding-top: 22px;
+      }
+
+      .hero {
+        gap: 16px;
+      }
+
+      .meta {
+        grid-template-columns: 1fr;
+      }
+
+      .drop-target {
+        margin: 12px;
+        padding: 24px 16px;
+      }
+
+      .drop-target h2 {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="titlebar">
+      <div class="brand">
+        <div class="logo">V</div>
+        <strong>Video2Text</strong>
+        <span>本地视频转文字稿</span>
+      </div>
+      <div class="window-hint">Windows · ffmpeg · Whisper</div>
+    </header>
+
+    <main class="main">
+      <section class="hero" aria-label="产品说明">
+        <div>
+          <h1>把本地视频快速转成同名文字稿</h1>
+          <p class="subtitle">选择 mp4、mkv、flv 等本地视频，工具会调用本机 ffmpeg 提取音频，再交给本机 Whisper 转写，结果保存到视频所在目录。</p>
+        </div>
+        <div class="meta" aria-label="输出规则">
+          <div class="meta-row"><span>输入</span><b>本地视频文件</b></div>
+          <div class="meta-row"><span>输出</span><b>同目录 .txt</b></div>
+          <div class="meta-row"><span>运行</span><b>全程本地</b></div>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="转写工作区">
+        <div class="panel dropzone">
+          <div class="drop-target">
+            <div>
+              <div class="file-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M5 4.8A2.8 2.8 0 0 1 7.8 2h5.7L19 7.5v11.7a2.8 2.8 0 0 1-2.8 2.8H7.8A2.8 2.8 0 0 1 5 19.2V4.8Z" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="M13.5 2.4V6a1.6 1.6 0 0 0 1.6 1.6h3.5" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="m10 10 5 3-5 3v-6Z" fill="currentColor"/>
+                </svg>
+              </div>
+              <h2>拖入视频，或选择一个文件</h2>
+              <p>界面只保留核心流程。确认后，桌面版会接入文件选择、转写进度和完成提示。</p>
+              <button class="primary" type="button">选择视频文件</button>
+            </div>
+          </div>
+
+          <div class="file-summary">
+            <div>
+              <p class="summary-label">当前文件</p>
+              <p class="summary-value">2026-05-30 00.01.19-视频-提升研习社.mp4</p>
+            </div>
+            <button class="ghost" type="button">开始转写</button>
+          </div>
+        </div>
+
+        <aside class="panel side" aria-label="转写状态">
+          <div class="output-box">
+            <p class="section-title">保存位置</p>
+            <p class="path">D:\Dev\Video2Text\2026-05-30 00.01.19-视频-提升研习社.txt</p>
+          </div>
+
+          <div class="progress">
+            <div class="progress-head">
+              <span>正在识别语音</span>
+              <strong>42%</strong>
+            </div>
+            <div class="bar" aria-hidden="true"><span></span></div>
+          </div>
+
+          <ul class="status-list">
+            <li class="done">
+              <span class="dot"></span>
+              <span><b>读取视频</b>已确认格式和文件路径</span>
+            </li>
+            <li class="done">
+              <span class="dot"></span>
+              <span><b>提取音频</b>ffmpeg 已生成临时音频</span>
+            </li>
+            <li class="active">
+              <span class="dot"></span>
+              <span><b>Whisper 转写</b>正在生成文字稿内容</span>
+            </li>
+            <li>
+              <span class="dot"></span>
+              <span><b>写入文件</b>完成后保存为同名 txt</span>
+            </li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>原型界面，仅用于确认视觉和流程。</span>
+      <span>默认输出：视频名称相同，扩展名为 .txt。</span>
+    </footer>
+  </div>
+</body>
+</html>

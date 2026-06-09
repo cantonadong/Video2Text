@@ -1,0 +1,7 @@
+.go-cache/
+.go-telemetry/
+.go-tmp/
+.verify/
+Video2Text.exe
+*.txt
+*.wav
