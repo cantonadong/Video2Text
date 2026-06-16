@@ -6,7 +6,7 @@ Native Windows desktop tool written in Go. It does not use a browser, WebView, P
 
 The app uses:
 
-- `ffmpeg` to extract mono 16 kHz WAV audio from the selected video.
+- `ffmpeg` to extract mono 16 kHz WAV audio from the selected media file.
 - `whisper.cpp` to transcribe that WAV locally.
 
 Default whisper.cpp location:
@@ -28,14 +28,17 @@ The app searches these files by default:
 - `D:\Models\asr\whisper.cpp\ggml-small.bin`
 - `D:\Models\asr\whisper.cpp\ggml-medium.bin`
 
-Existing `.en.bin` models are English-only. For Chinese videos, use a multilingual model such as `ggml-small.bin`.
+Existing `.en.bin` models are English-only. To automatically output Chinese or English based on the actual audio language, use a multilingual model such as `ggml-small.bin`.
 
 ## Output
 
-The transcript is saved next to the source video:
+Supported input formats include video files (`mp4`, `mkv`, `flv`, `mov`, `avi`, `webm`) and audio files (`mp3`, `ogg`, `aac`).
+
+The transcript is saved next to the source media file:
 
 ```text
 video.mp4 -> video.txt
+meeting.ogg -> meeting.txt
 ```
 
 ## Optional Environment Variables

@@ -3,5 +3,7 @@
 .go-tmp/
 .verify/
 Video2Text.exe
+Video2Text.exe~
+resource.syso
 *.txt
 *.wav

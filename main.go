@@ -87,6 +87,9 @@ const (
 	ffmpegZipURL      = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
 	whisperZipURL     = "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip"
 	whisperModelURL   = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+
+	supportedMediaLabel   = "mp4, mkv, flv, mov, avi, webm, mp3, ogg, aac"
+	supportedMediaPattern = "*.mp4;*.mkv;*.flv;*.mov;*.avi;*.webm;*.mp3;*.ogg;*.aac"
 )
 
 type point struct {
@@ -215,6 +218,7 @@ var (
 	procCoInitializeEx      = ole32.NewProc("CoInitializeEx")
 	procGetModuleHandle     = kernel32.NewProc("GetModuleHandleW")
 	procLoadCursor          = user32.NewProc("LoadCursorW")
+	procLoadIcon            = user32.NewProc("LoadIconW")
 	procBeginPaint          = user32.NewProc("BeginPaint")
 	procEndPaint            = user32.NewProc("EndPaint")
 	procCreateFont          = gdi32.NewProc("CreateFontW")
@@ -272,13 +276,16 @@ func main() {
 	wndProcCallback = syscall.NewCallback(windowProc)
 
 	cursor, _, _ := procLoadCursor.Call(0, 32512)
+	icon, _, _ := procLoadIcon.Call(hInstance, 1)
 	wc := wndClassEx{
 		cbSize:        uint32(unsafe.Sizeof(wndClassEx{})),
 		lpfnWndProc:   wndProcCallback,
 		hInstance:     hInstance,
+		hIcon:         icon,
 		hCursor:       cursor,
 		hbrBackground: colorWindow + 1,
 		lpszClassName: className,
+		hIconSm:       icon,
 	}
 	if ret, _, err := procRegisterClassEx.Call(uintptr(unsafe.Pointer(&wc))); ret == 0 {
 		exitError("register window failed", err)
@@ -337,7 +344,7 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 			if isRunning {
 				return 0
 			}
-			path, ok, err := chooseVideo(hwnd)
+			path, ok, err := chooseMedia(hwnd)
 			if err != nil {
 				setStatusUI("文件选择失败：" + err.Error())
 				return 0
@@ -346,7 +353,7 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 				selectedVideo = path
 				setText(fileText, path)
 				setText(outputText, outputPath(path))
-				setStatusUI("已选择视频。")
+				setStatusUI("已选择媒体文件。")
 				setProgressUI(0)
 			}
 			return 0
@@ -421,11 +428,11 @@ func createControls(hwnd uintptr) {
 	ffmpegDir = initialFFmpegDir()
 	whisperDir = initialWhisperDir()
 
-	fileText = createEdit(hwnd, "未选择视频", 72, 186, 488, 30)
-	chooseBtn = createButton(hwnd, "选择视频", 72, 258, 124, 40, idChoose, hInstance)
+	fileText = createEdit(hwnd, "未选择媒体文件", 72, 186, 488, 30)
+	chooseBtn = createButton(hwnd, "选择文件", 72, 258, 124, 40, idChoose, hInstance)
 	startBtn = createButton(hwnd, "开始转写", 210, 258, 124, 40, idStart, hInstance)
 
-	outputText = createEdit(hwnd, "选择视频后自动生成同目录 txt", 72, 350, 488, 30)
+	outputText = createEdit(hwnd, "选择文件后自动生成同目录 txt", 72, 350, 488, 30)
 
 	ffmpegDirText = createEdit(hwnd, ffmpegDir, 632, 186, 218, 30)
 	ffmpegDirBtn = createButton(hwnd, "目录", 632, 226, 74, 36, idFFmpegDir, hInstance)
@@ -438,7 +445,7 @@ func createControls(hwnd uintptr) {
 	progress = createWindow(0, utf16Ptr("msctls_progress32"), "", wsChild|wsVisible, 56, 520, 826, 14, hwnd, 0, hInstance, 0)
 	setProgressUI(0)
 
-	statusText = createStatic(hwnd, "就绪。支持 mp4、mkv、flv、mov、avi、webm。", 56, 548, 826, 24)
+	statusText = createStatic(hwnd, "就绪。支持 "+supportedMediaLabel+"，自动按实际语种输出。", 56, 548, 826, 24)
 }
 
 func createStatic(parent uintptr, text string, x, y, w, height int32) uintptr {
@@ -481,15 +488,15 @@ func paintUI(hwnd uintptr) {
 
 	fill(hdc, 0, 0, 940, 640, bgBrush)
 	drawText(hdc, "Video2Text", 40, 30, 300, 42, titleFont, rgb(20, 23, 29), dtLeft|dtTop|dtSingleLine)
-	drawText(hdc, "本地视频转文字稿", 42, 76, 220, 24, smallFont, rgb(93, 99, 111), dtLeft|dtTop|dtSingleLine)
+	drawText(hdc, "本地音视频转文字稿", 42, 76, 220, 24, smallFont, rgb(93, 99, 111), dtLeft|dtTop|dtSingleLine)
 	drawPill(hdc, 708, 38, 176, 34, "本地 whisper.cpp")
 
 	drawCard(hdc, 40, 124, 552, 306)
 	drawCard(hdc, 612, 124, 272, 306)
 	drawCard(hdc, 40, 464, 844, 92)
 
-	drawText(hdc, "选择视频", 72, 152, 220, 28, sectionFont, rgb(28, 32, 38), dtLeft|dtTop|dtSingleLine)
-	drawText(hdc, "选择 mp4、mkv、flv 等文件，转写结果会保存为同目录同名 txt。", 72, 180, 470, 24, smallFont, rgb(105, 112, 124), dtLeft|dtTop|dtSingleLine)
+	drawText(hdc, "选择音视频", 72, 152, 220, 28, sectionFont, rgb(28, 32, 38), dtLeft|dtTop|dtSingleLine)
+	drawText(hdc, "选择 "+supportedMediaLabel+" 等文件，转写结果会保存为同目录同名 txt。", 72, 180, 470, 24, smallFont, rgb(105, 112, 124), dtLeft|dtTop|dtSingleLine)
 	drawField(hdc, 64, 178, 512, 48)
 
 	drawText(hdc, "输出位置", 72, 308, 220, 28, sectionFont, rgb(28, 32, 38), dtLeft|dtTop|dtSingleLine)
@@ -645,15 +652,19 @@ func createWindow(exStyle uintptr, className *uint16, title string, style uint32
 	return ret
 }
 
-func chooseVideo(hwnd uintptr) (string, bool, error) {
+func chooseMedia(hwnd uintptr) (string, bool, error) {
 	buf := make([]uint16, 4096)
 	filter := makeDialogFilter(
+		"Media files ("+supportedMediaPattern+")",
+		supportedMediaPattern,
 		"Video files (*.mp4;*.mkv;*.flv;*.mov;*.avi;*.webm)",
 		"*.mp4;*.mkv;*.flv;*.mov;*.avi;*.webm",
+		"Audio files (*.mp3;*.ogg;*.aac)",
+		"*.mp3;*.ogg;*.aac",
 		"All files (*.*)",
 		"*.*",
 	)
-	title := syscall.StringToUTF16("Choose video file")
+	title := syscall.StringToUTF16("Choose media file")
 	ofn := openFileName{
 		lStructSize: uint32(unsafe.Sizeof(openFileName{})),
 		hwndOwner:   hwnd,
@@ -847,7 +858,7 @@ func runWhisperCPP(audio, tempDir string) (string, error) {
 	args := []string{
 		"-m", model,
 		"-f", audio,
-		"-l", "zh",
+		"-l", "auto",
 		"-otxt",
 		"-of", prefix,
 	}

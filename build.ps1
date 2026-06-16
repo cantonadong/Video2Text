@@ -7,4 +7,5 @@ $env:GOTELEMETRYDIR = (Resolve-Path .\.go-telemetry).Path
 $env:GOCACHE = (Resolve-Path .\.go-cache).Path
 $env:GOTMPDIR = (Resolve-Path .\.go-tmp).Path
 
+go run .\tools\genicon
 go build -ldflags="-H=windowsgui" -o Video2Text.exe .
