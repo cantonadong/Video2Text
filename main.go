@@ -36,8 +36,9 @@ const (
 	esReadonly    = 0x0800
 	esAutoHScroll = 0x0080
 
-	bsPushButton = 0x00000000
-	bsOwnerDraw  = 0x0000000B
+	bsPushButton   = 0x00000000
+	bsOwnerDraw    = 0x0000000B
+	bsAutoCheckBox = 0x00000003
 
 	wmCreate         = 0x0001
 	wmDestroy        = 0x0002
@@ -63,6 +64,8 @@ const (
 
 	pbmSetRange   = 0x0401
 	pbmSetPos     = 0x0402
+	bmGetCheck    = 0x00F0
+	bstChecked    = 1
 	emSetSel      = 0x00B1
 	emScrollCaret = 0x00B7
 	wmSetFont     = 0x0030
@@ -81,6 +84,7 @@ const (
 	idWhisperDir      = 1004
 	idDownloadFFmpeg  = 1005
 	idDownloadWhisper = 1006
+	idSRTOutput       = 1007
 
 	defaultFFmpegDir  = `D:\Tools\ffmpeg`
 	defaultWhisperDir = `D:\Models\asr\whisper.cpp`
@@ -195,43 +199,44 @@ var (
 	shell32  = syscall.NewLazyDLL("shell32.dll")
 	ole32    = syscall.NewLazyDLL("ole32.dll")
 
-	procRegisterClassEx     = user32.NewProc("RegisterClassExW")
-	procCreateWindowEx      = user32.NewProc("CreateWindowExW")
-	procDefWindowProc       = user32.NewProc("DefWindowProcW")
-	procDestroyWindow       = user32.NewProc("DestroyWindow")
-	procPostQuitMessage     = user32.NewProc("PostQuitMessage")
-	procGetMessage          = user32.NewProc("GetMessageW")
-	procTranslateMessage    = user32.NewProc("TranslateMessage")
-	procDispatchMessage     = user32.NewProc("DispatchMessageW")
-	procShowWindow          = user32.NewProc("ShowWindow")
-	procUpdateWindow        = user32.NewProc("UpdateWindow")
-	procSetWindowText       = user32.NewProc("SetWindowTextW")
-	procGetWindowText       = user32.NewProc("GetWindowTextW")
-	procSendMessage         = user32.NewProc("SendMessageW")
-	procPostMessage         = user32.NewProc("PostMessageW")
-	procEnableWindow        = user32.NewProc("EnableWindow")
-	procGetOpenFileName     = comdlg32.NewProc("GetOpenFileNameW")
-	procCommDlgExtError     = comdlg32.NewProc("CommDlgExtendedError")
-	procSHBrowseForFolder   = shell32.NewProc("SHBrowseForFolderW")
-	procSHGetPathFromIDList = shell32.NewProc("SHGetPathFromIDListW")
-	procCoTaskMemFree       = ole32.NewProc("CoTaskMemFree")
-	procCoInitializeEx      = ole32.NewProc("CoInitializeEx")
-	procGetModuleHandle     = kernel32.NewProc("GetModuleHandleW")
-	procLoadCursor          = user32.NewProc("LoadCursorW")
-	procLoadIcon            = user32.NewProc("LoadIconW")
-	procBeginPaint          = user32.NewProc("BeginPaint")
-	procEndPaint            = user32.NewProc("EndPaint")
-	procCreateFont          = gdi32.NewProc("CreateFontW")
-	procCreatePen           = gdi32.NewProc("CreatePen")
-	procCreateSolidBrush    = gdi32.NewProc("CreateSolidBrush")
-	procDeleteObject        = gdi32.NewProc("DeleteObject")
-	procSelectObject        = gdi32.NewProc("SelectObject")
-	procSetBkMode           = gdi32.NewProc("SetBkMode")
-	procSetTextColor        = gdi32.NewProc("SetTextColor")
-	procRoundRect           = gdi32.NewProc("RoundRect")
-	procFillRect            = user32.NewProc("FillRect")
-	procDrawText            = user32.NewProc("DrawTextW")
-	procInitCommonCtrls     = comctl32.NewProc("InitCommonControls")
+	procRegisterClassEx      = user32.NewProc("RegisterClassExW")
+	procCreateWindowEx       = user32.NewProc("CreateWindowExW")
+	procDefWindowProc        = user32.NewProc("DefWindowProcW")
+	procDestroyWindow        = user32.NewProc("DestroyWindow")
+	procPostQuitMessage      = user32.NewProc("PostQuitMessage")
+	procGetMessage           = user32.NewProc("GetMessageW")
+	procTranslateMessage     = user32.NewProc("TranslateMessage")
+	procDispatchMessage      = user32.NewProc("DispatchMessageW")
+	procShowWindow           = user32.NewProc("ShowWindow")
+	procUpdateWindow         = user32.NewProc("UpdateWindow")
+	procSetWindowText        = user32.NewProc("SetWindowTextW")
+	procGetWindowText        = user32.NewProc("GetWindowTextW")
+	procSendMessage          = user32.NewProc("SendMessageW")
+	procPostMessage          = user32.NewProc("PostMessageW")
+	procEnableWindow         = user32.NewProc("EnableWindow")
+	procSetProcessDPIContext = user32.NewProc("SetProcessDpiAwarenessContext")
+	procGetOpenFileName      = comdlg32.NewProc("GetOpenFileNameW")
+	procCommDlgExtError      = comdlg32.NewProc("CommDlgExtendedError")
+	procSHBrowseForFolder    = shell32.NewProc("SHBrowseForFolderW")
+	procSHGetPathFromIDList  = shell32.NewProc("SHGetPathFromIDListW")
+	procCoTaskMemFree        = ole32.NewProc("CoTaskMemFree")
+	procCoInitializeEx       = ole32.NewProc("CoInitializeEx")
+	procGetModuleHandle      = kernel32.NewProc("GetModuleHandleW")
+	procLoadCursor           = user32.NewProc("LoadCursorW")
+	procLoadIcon             = user32.NewProc("LoadIconW")
+	procBeginPaint           = user32.NewProc("BeginPaint")
+	procEndPaint             = user32.NewProc("EndPaint")
+	procCreateFont           = gdi32.NewProc("CreateFontW")
+	procCreatePen            = gdi32.NewProc("CreatePen")
+	procCreateSolidBrush     = gdi32.NewProc("CreateSolidBrush")
+	procDeleteObject         = gdi32.NewProc("DeleteObject")
+	procSelectObject         = gdi32.NewProc("SelectObject")
+	procSetBkMode            = gdi32.NewProc("SetBkMode")
+	procSetTextColor         = gdi32.NewProc("SetTextColor")
+	procRoundRect            = gdi32.NewProc("RoundRect")
+	procFillRect             = user32.NewProc("FillRect")
+	procDrawText             = user32.NewProc("DrawTextW")
+	procInitCommonCtrls      = comctl32.NewProc("InitCommonControls")
 
 	wndProcCallback uintptr
 
@@ -244,6 +249,7 @@ var (
 	progress           uintptr
 	startBtn           uintptr
 	chooseBtn          uintptr
+	srtOutputCheck     uintptr
 	ffmpegDirBtn       uintptr
 	whisperDirBtn      uintptr
 	downloadFFmpegBtn  uintptr
@@ -268,6 +274,7 @@ var (
 
 func main() {
 	runtime.LockOSThread()
+	initDPIAwareness()
 	procCoInitializeEx.Call(0, 2)
 	procInitCommonCtrls.Call()
 
@@ -307,6 +314,15 @@ func main() {
 		}
 		procTranslateMessage.Call(uintptr(unsafe.Pointer(&m)))
 		procDispatchMessage.Call(uintptr(unsafe.Pointer(&m)))
+	}
+}
+
+func initDPIAwareness() {
+	// GDI-scaled DPI virtualization keeps custom painting and native controls in
+	// the same coordinate system at every Windows display scale.
+	if procSetProcessDPIContext.Find() == nil {
+		// DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED (-5).
+		procSetProcessDPIContext.Call(^uintptr(4))
 	}
 }
 
@@ -352,7 +368,7 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 			if ok {
 				selectedVideo = path
 				setText(fileText, path)
-				setText(outputText, outputPath(path))
+				refreshOutputPathUI()
 				setStatusUI("已选择媒体文件。")
 				setProgressUI(0)
 			}
@@ -361,10 +377,14 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 			if selectedVideo == "" || isRunning {
 				return 0
 			}
+			useSRT := isSRTOutputEnabled()
 			isRunning = true
 			setBusy(true)
 			setStatusUI("开始转写。")
-			go runTranscription(selectedVideo)
+			go runTranscription(selectedVideo, useSRT)
+			return 0
+		case idSRTOutput:
+			refreshOutputPathUI()
 			return 0
 		case idFFmpegDir:
 			if path, ok := chooseFolder(hwnd, "选择 ffmpeg 安装目录"); ok {
@@ -432,11 +452,13 @@ func createControls(hwnd uintptr) {
 	chooseBtn = createButton(hwnd, "选择文件", 72, 258, 124, 40, idChoose, hInstance)
 	startBtn = createButton(hwnd, "开始转写", 210, 258, 124, 40, idStart, hInstance)
 
-	outputText = createEdit(hwnd, "选择文件后自动生成同目录 txt", 72, 350, 488, 30)
+	outputText = createEdit(hwnd, "选择文件后自动生成同目录 txt", 72, 368, 488, 30)
 
-	ffmpegDirText = createEdit(hwnd, ffmpegDir, 632, 186, 218, 30)
-	ffmpegDirBtn = createButton(hwnd, "目录", 632, 226, 74, 36, idFFmpegDir, hInstance)
-	downloadFFmpegBtn = createButton(hwnd, "下载", 716, 226, 74, 36, idDownloadFFmpeg, hInstance)
+	srtOutputCheck = createCheckbox(hwnd, "输出 SRT 字幕（带时间戳）", 72, 406, 260, 24, idSRTOutput, hInstance)
+
+	ffmpegDirText = createEdit(hwnd, ffmpegDir, 632, 206, 218, 30)
+	ffmpegDirBtn = createButton(hwnd, "目录", 632, 246, 74, 36, idFFmpegDir, hInstance)
+	downloadFFmpegBtn = createButton(hwnd, "下载", 716, 246, 74, 36, idDownloadFFmpeg, hInstance)
 
 	whisperDirText = createEdit(hwnd, whisperDir, 632, 326, 218, 30)
 	whisperDirBtn = createButton(hwnd, "目录", 632, 366, 74, 36, idWhisperDir, hInstance)
@@ -457,6 +479,12 @@ func createStatic(parent uintptr, text string, x, y, w, height int32) uintptr {
 
 func createButton(parent uintptr, text string, x, y, w, height int32, id int, hInstance uintptr) uintptr {
 	ctrl := createWindow(0, utf16Ptr("BUTTON"), text, wsChild|wsVisible|wsTabStop|bsPushButton|bsOwnerDraw, x, y, w, height, parent, uintptr(id), hInstance, 0)
+	applyFont(ctrl)
+	return ctrl
+}
+
+func createCheckbox(parent uintptr, text string, x, y, w, height int32, id int, hInstance uintptr) uintptr {
+	ctrl := createWindow(0, utf16Ptr("BUTTON"), text, wsChild|wsVisible|wsTabStop|bsAutoCheckBox, x, y, w, height, parent, uintptr(id), hInstance, 0)
 	applyFont(ctrl)
 	return ctrl
 }
@@ -491,8 +519,8 @@ func paintUI(hwnd uintptr) {
 	drawText(hdc, "本地音视频转文字稿", 42, 76, 220, 24, smallFont, rgb(93, 99, 111), dtLeft|dtTop|dtSingleLine)
 	drawPill(hdc, 708, 38, 176, 34, "本地 whisper.cpp")
 
-	drawCard(hdc, 40, 124, 552, 306)
-	drawCard(hdc, 612, 124, 272, 306)
+	drawCard(hdc, 40, 124, 552, 324)
+	drawCard(hdc, 612, 124, 272, 324)
 	drawCard(hdc, 40, 464, 844, 92)
 
 	drawText(hdc, "选择音视频", 72, 152, 220, 28, sectionFont, rgb(28, 32, 38), dtLeft|dtTop|dtSingleLine)
@@ -501,11 +529,11 @@ func paintUI(hwnd uintptr) {
 
 	drawText(hdc, "输出位置", 72, 308, 220, 28, sectionFont, rgb(28, 32, 38), dtLeft|dtTop|dtSingleLine)
 	drawText(hdc, "无需额外设置，按视频文件名自动生成。", 72, 336, 420, 24, smallFont, rgb(105, 112, 124), dtLeft|dtTop|dtSingleLine)
-	drawField(hdc, 64, 342, 512, 48)
+	drawField(hdc, 64, 360, 512, 48)
 
 	drawText(hdc, "本地能力", 632, 152, 160, 28, sectionFont, rgb(28, 32, 38), dtLeft|dtTop|dtSingleLine)
 	drawText(hdc, "ffmpeg 目录", 632, 174, 160, 22, smallFont, rgb(105, 112, 124), dtLeft|dtTop|dtSingleLine)
-	drawField(hdc, 624, 178, 242, 48)
+	drawField(hdc, 624, 198, 242, 48)
 	drawText(hdc, "whisper.cpp 目录", 632, 314, 160, 22, smallFont, rgb(105, 112, 124), dtLeft|dtTop|dtSingleLine)
 	drawField(hdc, 624, 318, 242, 48)
 	drawText(hdc, "下载后会写入用户级环境变量，新的终端会自动生效。", 632, 414, 214, 34, smallFont, rgb(105, 112, 124), dtLeft|dtTop|dtWordBreak)
@@ -716,10 +744,10 @@ func chooseFolder(hwnd uintptr, title string) (string, bool) {
 	return syscall.UTF16ToString(pathBuf), true
 }
 
-func runTranscription(video string) {
+func runTranscription(video string, useSRT bool) {
 	defer postDone()
 
-	out := outputPath(video)
+	out := outputPath(video, useSRT)
 	tempDir, err := os.MkdirTemp("", "video2text-*")
 	if err != nil {
 		fail("Create temp directory failed", err)
@@ -742,7 +770,7 @@ func runTranscription(video string) {
 
 	postProgress(35)
 	postLog("Running whisper.cpp.")
-	transcript, err := runWhisperCPP(audio, tempDir)
+	transcript, err := runWhisperCPP(audio, tempDir, useSRT)
 	if err != nil {
 		fail("whisper.cpp failed", err)
 		return
@@ -844,7 +872,7 @@ func downloadWhisperAssets() {
 	postLog("whisper.cpp 和模型已安装，并写入环境变量。")
 }
 
-func runWhisperCPP(audio, tempDir string) (string, error) {
+func runWhisperCPP(audio, tempDir string, useSRT bool) (string, error) {
 	bin, err := resolveWhisperBinary()
 	if err != nil {
 		return "", err
@@ -859,17 +887,23 @@ func runWhisperCPP(audio, tempDir string) (string, error) {
 		"-m", model,
 		"-f", audio,
 		"-l", "auto",
-		"-otxt",
 		"-of", prefix,
+	}
+	outExt := ".txt"
+	if useSRT {
+		args = append(args, "-osrt")
+		outExt = ".srt"
+	} else {
+		args = append(args, "-otxt")
 	}
 	if err := runCommand(bin, args...); err != nil {
 		return "", err
 	}
 
-	txt := prefix + ".txt"
-	data, err := os.ReadFile(txt)
+	out := prefix + outExt
+	data, err := os.ReadFile(out)
 	if err != nil {
-		return "", fmt.Errorf("read whisper output %s: %w", txt, err)
+		return "", fmt.Errorf("read whisper output %s: %w", out, err)
 	}
 	return string(data), nil
 }
@@ -1129,9 +1163,28 @@ func fileExists(path string) bool {
 	return err == nil && !info.IsDir() && info.Size() > 0
 }
 
-func outputPath(video string) string {
+func outputPath(video string, useSRT bool) string {
 	ext := filepath.Ext(video)
-	return strings.TrimSuffix(video, ext) + ".txt"
+	outExt := ".txt"
+	if useSRT {
+		outExt = ".srt"
+	}
+	return strings.TrimSuffix(video, ext) + outExt
+}
+
+func refreshOutputPathUI() {
+	if selectedVideo == "" {
+		return
+	}
+	setText(outputText, outputPath(selectedVideo, isSRTOutputEnabled()))
+}
+
+func isSRTOutputEnabled() bool {
+	if srtOutputCheck == 0 {
+		return false
+	}
+	ret, _, _ := procSendMessage.Call(srtOutputCheck, bmGetCheck, 0, 0)
+	return ret == bstChecked
 }
 
 func postLog(text string) {
@@ -1180,6 +1233,7 @@ func setStatusUI(text string) {
 func setBusy(busy bool) {
 	enable(startBtn, !busy)
 	enable(chooseBtn, !busy)
+	enable(srtOutputCheck, !busy)
 	enable(ffmpegDirBtn, !busy)
 	enable(whisperDirBtn, !busy)
 	enable(downloadFFmpegBtn, !busy)
